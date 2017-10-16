@@ -16,9 +16,13 @@ class ChatscriptCommunications {
 
         let self = this;
 
-        this.say = function () {
+        this.start = function () {
             return self._test.say.apply(self._test, arguments);
         };
+
+        this.say = function () {
+            return self._test.reply.apply(self._test, arguments);
+        }
 
         this.reply = function () {
             return self._test.reply.apply(self._test, arguments);
@@ -178,22 +182,30 @@ class TestSupport {
 
         if (typeof message == "string") {
             msg = message;
+            console.log("\nUser: " + msg);
         } else {
             data = message;
             msg = message.text || "";
+            console.log("\nAUTO: [ " + JSON.stringify(data) + " ] " + msg);
         }
 
-        console.log("User: " + msg);
-
         return this._comms.message(msg, data).then(result => {
-            console.log("Bot: " + result.text + "    :     " + JSON.stringify(result));
 
-            if (result.actions && result.actions.length > 0); {
-                console.log()
+            console.log("Bot: " + this.fixText(result.text));
+
+            if (result.actions && result.actions.length > 0) {
+                console.log("  Actions:")
+                _.each(result.actions, action => {
+                    console.log("    " + JSON.stringify(action));
+                });
             }
+            if (result.prompts != null && result.prompts.length > 0) {
+                console.log("  Prompts: " + JSON.stringify(result.prompts))
+            }
+
             if (callback !== undefined) callback(result);
 
-            // console.log(result);
+            // console.log("\n");
             return result;
         });
     }
@@ -220,6 +232,10 @@ class TestSupport {
                 }).catch(ex => reject(ex));
             });
         };
+    }
+
+    fixText (text) {
+        return text.replace("\t", "\\t");
     }
 }
 
