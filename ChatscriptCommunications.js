@@ -27,6 +27,13 @@ class ChatscriptCommunications {
         this.reply = function () {
             return self._test.reply.apply(self._test, arguments);
         }
+
+        this._debug = false;
+    }
+
+    debug (_debug) {
+        this._debug = _debug;
+        return this;
     }
 
     port (_port) {
@@ -180,27 +187,29 @@ class TestSupport {
     say (message, callback) {
         let msg, data = {};
 
+        let debug = this._comms._debug;
+
         if (typeof message == "string") {
             msg = message;
-            console.log("\nUser: " + msg);
+            if (debug) console.log("\nUser: " + msg);
         } else {
             data = message;
             msg = message.text || "";
-            console.log("\nAUTO: [ " + JSON.stringify(data) + " ] " + msg);
+            if (debug) console.log("\nAUTO: [ " + JSON.stringify(data) + " ] " + msg);
         }
 
         return this._comms.message(msg, data).then(result => {
 
-            console.log("Bot: " + this.fixText(result.text));
+            if (debug) console.log("Bot: " + this.fixText(result.text));
 
             if (result.actions && result.actions.length > 0) {
-                console.log("  Actions:")
+                if (debug) console.log("  Actions:")
                 _.each(result.actions, action => {
-                    console.log("    " + JSON.stringify(action));
+                    if (debug) console.log("    " + JSON.stringify(action));
                 });
             }
             if (result.prompts != null && result.prompts.length > 0) {
-                console.log("  Prompts: " + JSON.stringify(result.prompts))
+                if (debug) console.log("  Prompts: " + JSON.stringify(result.prompts))
             }
 
             if (callback !== undefined) callback(result);
