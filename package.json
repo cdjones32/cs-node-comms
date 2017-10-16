@@ -1,0 +1,12 @@
+{
+  "name": "cs-server",
+  "version": "1.0.0",
+  "description": "Example Chatscript TCP Socket connection library for Node.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "dependencies": {
+    "bluebird": "^3.5.0" 
+  }
+}
