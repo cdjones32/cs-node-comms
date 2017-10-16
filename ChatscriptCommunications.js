@@ -22,11 +22,11 @@ class ChatscriptCommunications {
 
         this.say = function () {
             return self._test.reply.apply(self._test, arguments);
-        }
+        };
 
         this.reply = function () {
             return self._test.reply.apply(self._test, arguments);
-        }
+        };
 
         this._debug = false;
     }
@@ -77,7 +77,6 @@ class ChatscriptCommunications {
      */
     message (msg, options) {
         let deferred = Promise.defer();
-        let subscription;
         let logs = [];
 
         options = _.defaults({}, options, {
@@ -98,11 +97,6 @@ class ChatscriptCommunications {
             deferred.reject(err);
 
             chatscriptSocket.destroy();
-
-            // Remove the log tail subscription if we have one
-            if (subscription != null) {
-                subscription.unsubscribe();
-            }
         };
 
         let chatscriptSocket = net.createConnection(configuration, () => {
@@ -114,7 +108,7 @@ class ChatscriptCommunications {
 
                 // console.log("Message size: " + adjustedMessage.length);
 
-                if (options.disableMessageSizeLimit == false && adjustedMessage.length >= options.messageSizeLimit) {
+                if (options.disableMessageSizeLimit === false && adjustedMessage.length >= options.messageSizeLimit) {
                     console.log("ERROR: Message is too long!");
                     errorFunction("ERROR: Message is too long!");
                 }
@@ -140,14 +134,12 @@ class ChatscriptCommunications {
             if (response.includes(JOIN_SEPARATOR)) {
                 let split = response.split(JOIN_SEPARATOR);
 
-                let responseObj = _.defaults(
+                finalResponse = _.defaults(
                     {
                         text: split[0].trim()
                     },
                     JSON.parse(split[1])
                 );
-
-                finalResponse = responseObj;
             } else {
                 finalResponse = {
                     text: response
@@ -186,7 +178,7 @@ class TestSupport {
      */
     say (message, callback) {
         let msg, data = {};
-
+        let self = this;
         let debug = this._comms._debug;
 
         if (typeof message == "string") {
@@ -200,23 +192,36 @@ class TestSupport {
 
         return this._comms.message(msg, data).then(result => {
 
-            if (debug) console.log("Bot: " + this.fixText(result.text));
+            if (debug) self.debugMessage(result);
 
-            if (result.actions && result.actions.length > 0) {
-                if (debug) console.log("  Actions:")
-                _.each(result.actions, action => {
-                    if (debug) console.log("    " + JSON.stringify(action));
-                });
+            if (callback !== undefined) {
+                try {
+                    callback(result);
+                } catch (ex) {
+                    if (debug == false) {
+                        self.debugMessage(result);
+                    }
+                    throw ex;
+                }
             }
-            if (result.prompts != null && result.prompts.length > 0) {
-                if (debug) console.log("  Prompts: " + JSON.stringify(result.prompts))
-            }
-
-            if (callback !== undefined) callback(result);
 
             // console.log("\n");
             return result;
         });
+    }
+
+    debugMessage (result) {
+        console.log("Bot: " + TestSupport.fixText(result.text));
+
+        if (result.actions && result.actions.length > 0) {
+            console.log("  Actions:");
+            _.each(result.actions, action => {
+                console.log("    " + JSON.stringify(action));
+            });
+        }
+        if (result.prompts != null && result.prompts.length > 0) {
+            console.log("  Prompts: " + JSON.stringify(result.prompts))
+        }
     }
 
     /**
@@ -229,6 +234,8 @@ class TestSupport {
      */
     reply(message, callback) {
         let self = this;
+        let debug = this._comms._debug;
+
         return () => {
             return new Promise((resolve, reject) => {
                 self.say(message).then(r => {
@@ -236,6 +243,9 @@ class TestSupport {
                         callback(r);
                         resolve(r);
                     } catch (ex) {
+                        if (debug === false) {
+                            self.debugMessage(r);
+                        }
                         reject(ex);
                     }
                 }).catch(ex => reject(ex));
@@ -243,7 +253,7 @@ class TestSupport {
         };
     }
 
-    fixText (text) {
+    static fixText (text) {
         return text.replace("\t", "\\t");
     }
 }
